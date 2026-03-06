@@ -1,14 +1,6 @@
-//This file is used for error handling within the routes of the api.js file
-//It is important to note that to confirm what is being imported into a file you will see the key words CONST at the top of the file page and you will see the keywords such as mongoose or Student being used in the body of the file.
-
-//Importing  Student from studentModels.js
-// const { default: mongoose } = require('mongoose');
 const mongoose    = require('mongoose');
 const Message     = require('../models/messageModel');
 const createError = require('http-errors');
-
-//Alternative method to exporting. This is the recommended method.
-//In this method you will place the POST, GET, PATCH AND DELETE CODE inside of the module.exports.
 
 module.exports = {
 
@@ -30,136 +22,89 @@ module.exports = {
                 }
             },
 
-            //POST-ADDING TO THE DATABASE
-            //paste the following code lifted from the api.js file:
-            //This is the error handling code for the POST request
-            AddMessage: async (req, res, next)=>{
-                //add student is a Method
-                //note that code has changed for students to student.
-                try{
-                    
-                    const message = new Message(req.body)
+            AddMessage: async (req, res, next) => {
+                try {
+                    const message = new Message(req.body);
                     const result  = await message.save();
                     res.send(result);
-                }catch(error){
-                    console.log(error.message);
-                    //error validation
-                    if(error.name === "ValidationError"){
-                        next(createError(422, error.message))
-                        return;
-                    }
-                    next(error)
-                } 
-            },  //incase you want to add another code you will use a comma after the closing curly brace. (,)
-             
-            //Code to output ALL student in POSTMAN without the ID option
-            GetAllMessage: async (req, res, next)=>{
-                try{
-                    
-                    const result = await Message.find({})
-                    res.send(result)
-                }catch(error){
-                    console.log(error.message)
-                    //global error handling has been added. In case of any errors check this code section.
-                    //error validation
-                    if(error.name === "ValidationError"){
-                        next(createError(422, error.message))
-                        return;
-                    }
-                    next(error)
-                }
-            },
-
-            //GET - RETRIEVING FROM THE DATABASE
-            //past the following code lifted from the api.js file:
-            //This is the error handling code for the GET request.
-            //I replaced student with result.
-            //Code to output a single student information in POSTMAN using an ID option.
-            GetMessage: async (req, res, next)=>{
-                //note that code has changed from students to student.
-                const _id = req.params._id;// This line of code makes it possible to get what is present in the url
-
-                try{
-
-                    // Check if id is a valid ObjectId
-                    if (!_id.match(/^[0-9a-fA-F]{24}$/) || !mongoose.Types.ObjectId.isValid(_id)) {
-                        throw createError(400, 'Invalid message id');
-                    }
-
-                    const result = await Message.findById(_id);
-                    if(!result){
-                        throw(createError(404,"Message does not exist"))
-                    }
-                    res.send(result)
-                }catch(error){
-                    console.log(error.message);
-                    if(error instanceof mongoose.CastError){
-                        next(createError(400, "Invalid message id"));
+                } catch (error) {
+                    if (error.name === 'ValidationError') {
+                        next(createError(422, error.message));
                         return;
                     }
                     next(error);
                 }
-                
             },
-            
-            //PATCH - UPDATING THE DATABASE
-            //This is the same approach as the DELETE when placing the error handling
-            //paste the following code lifted from the api.js file:
-            //Update has been edited accordingly.
-            ChangeMessage: async(req, res, next) => {
-                // console.log(req.params.id);
-                //next has been edited out of the code:
-                //patch and put are used interchangeably
-                const _id      = req.params._id;
-                try{
-                    // Check if id is a valid ObjectId
-                    if (!_id.match(/^[0-9a-fA-F]{24}$/) || !mongoose.Types.ObjectId.isValid(_id)) {
+
+            GetAllMessage: async (req, res, next) => {
+                try {
+                    const result = await Message.find({});
+                    res.send(result);
+                } catch (error) {
+                    next(error);
+                }
+            },
+
+            GetMessage: async (req, res, next) => {
+                const _id = req.params._id;
+                try {
+                    if (!mongoose.Types.ObjectId.isValid(_id)) {
                         throw createError(400, 'Invalid message id');
                     }
+                    const result = await Message.findById(_id);
+                    if (!result) {
+                        throw createError(404, 'Message does not exist');
+                    }
+                    res.send(result);
+                } catch (error) {
+                    if (error instanceof mongoose.CastError) {
+                        next(createError(400, 'Invalid message id'));
+                        return;
+                    }
+                    next(error);
+                }
+            },
 
+            // was referencing undefined Student variable — fixed to use Message
+            ChangeMessage: async (req, res, next) => {
+                const _id = req.params._id;
+                try {
+                    if (!mongoose.Types.ObjectId.isValid(_id)) {
+                        throw createError(400, 'Invalid message id');
+                    }
                     const update  = req.body;
-                    const options = {new: true};
-                    const result  = await Student.findByIdAndUpdate(_id, update, options);
-                    if(!result){
-                        throw(createError(404, "Message does not Exist"))
+                    const options = { new: true };
+                    const result  = await Message.findByIdAndUpdate(_id, update, options);
+                    if (!result) {
+                        throw createError(404, 'Message does not exist');
                     }
                     res.send(result);
-
-                }catch(error){
-                    console.log(error.message);
-                    //error validation
-                    if(error instanceof mongoose.CastError){
-                        next(createError(400, "Invalid message id"));
+                } catch (error) {
+                    if (error instanceof mongoose.CastError) {
+                        next(createError(400, 'Invalid message id'));
                         return;
                     }
-                    next(error)
-                } 
-            }, 
+                    next(error);
+                }
+            },
 
-            //DELETE - DELETING THE DATABASE
-            //paste the following lifted from the api.js file:
-            EraseMessage: async(req, res, next) => {
-                const _id = req.params._id
-                try{
-                    // Check if id is a valid ObjectId
-                    if (!_id.match(/^[0-9a-fA-F]{24}$/) || !mongoose.Types.ObjectId.isValid(_id)) {
+            EraseMessage: async (req, res, next) => {
+                const _id = req.params._id;
+                try {
+                    if (!mongoose.Types.ObjectId.isValid(_id)) {
                         throw createError(400, 'Invalid message id');
                     }
-                    
-                    const result = await Message.findByIdAndRemove(_id);
-                    if(!result){
-                        throw(createError(404,"Message does not exist"))
+                    const result = await Message.findByIdAndDelete(_id);
+                    if (!result) {
+                        throw createError(404, 'Message does not exist');
                     }
                     res.send(result);
-
-                }catch (error){
-                    console.log(error.message);//confirm the semi-colon at this point
-                    //error validation
-                    if(error instanceof mongoose.CastError){
-                        next(createError(400, "Invalid message id"));
+                } catch (error) {
+                    if (error instanceof mongoose.CastError) {
+                        next(createError(400, 'Invalid message id'));
                         return;
                     }
-                    next(error)
+                    next(error);
                 }
             },
 

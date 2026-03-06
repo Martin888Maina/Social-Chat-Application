@@ -1,187 +1,177 @@
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-const socketIo = require('socket.io');
-const mongoose = require('mongoose');
-const messageRoutes = require('./routes/messageRoutes');
-const registerRoutes = require('./routes/registerRoutes');
-const passwordRoutes = require('./routes/passwordRoutes');
-const groupRoutes = require('./routes/groupRoutes');
-const app = express();
-const server = http.createServer(app);
-const Register = require('./models/registerModel');// importing the model
-const Group = require('./models/groupModel');
-
-
-app.use(cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    credentials: true,
-}));
-
 require('dotenv').config();
 require('./config/init_mongodb');
 
+const express    = require('express');
+const cors       = require('cors');
+const http       = require('http');
+const socketIo   = require('socket.io');
+const mongoose   = require('mongoose');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
+
+const messageRoutes  = require('./routes/messageRoutes');
+const registerRoutes = require('./routes/registerRoutes');
+const passwordRoutes = require('./routes/passwordRoutes');
+const groupRoutes    = require('./routes/groupRoutes');
+const errorHandler   = require('./middleware/errorHandler');
+
+const Register = require('./models/registerModel');
+const Group    = require('./models/groupModel');
+
+const app    = express();
+const server = http.createServer(app);
+
+// security headers
+app.use(helmet());
+
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+}));
+
 app.use(express.json());
 
-// Middleware to attach io instance to req object
+// rate limiter for auth endpoints — keep brute force attempts low
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: { error: { status: 429, message: 'Too many requests, please try again later.' } },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// tighter limiter for message sending
+const messageLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 60,
+    message: { error: { status: 429, message: 'Sending too fast, slow down.' } },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const io = socketIo(server, {
+    cors: {
+        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+    transports: ['websocket'],
+});
+
+// attach io to every request so controllers can emit events
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
-app.use('/Register', registerRoutes);
-app.use('/Message', messageRoutes);
-app.use('/Password', passwordRoutes);
+app.use('/Register', authLimiter, registerRoutes);
+app.use('/Message', messageLimiter, messageRoutes);
+app.use('/Password', authLimiter, passwordRoutes);
 app.use('/Group', groupRoutes);
 
-const io = socketIo(server, {
-    cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
-        credentials: true,
-    },
-});
-
-const onlineUsers = new Map();
+// onlineUsers  — username  -> socketId
+// userSocketMap — userId   -> { socketId, username }
+// keeping both pieces together so disconnect can clean up correctly
+const onlineUsers   = new Map();
 const userSocketMap = new Map();
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+    console.log('user connected:', socket.id);
 
-    // Register new user and map their user ID to their socket ID
     socket.on('new user', (userId, username) => {
-        userSocketMap.set(userId, socket.id); // Store userId to socketId mapping
-        onlineUsers.set(username, socket.id); // Keep the existing mapping of username to socketId
+        // store username alongside socketId so disconnect can find the right key
+        userSocketMap.set(userId, { socketId: socket.id, username });
+        onlineUsers.set(username, socket.id);
         io.emit('update users', Array.from(onlineUsers.keys()));
-        console.log('User registered:', username, 'User ID:', userId, 'Socket ID:', socket.id);
     });
 
-    // Join group room
     socket.on('join group', (groupId) => {
         socket.join(groupId);
-        console.log(`User ${socket.id} joined group ${groupId}`);
     });
 
-    // Leave group room
     socket.on('leave group', (groupId) => {
         socket.leave(groupId);
-        console.log(`User ${socket.id} left group ${groupId}`);
     });
 
-    
-
-    // Handle group messages and emit to all users in the group
     socket.on('group message', async (msg) => {
         try {
-            console.log('Group message received on server:', msg);
-
-            // Fetch sender details
             const sender = await Register.findById(msg.sender, 'firstname lastname');
-            if (!sender) {
-                console.error('Sender not found:', msg.sender);
-                return;
-            }
+            if (!sender) return;
             const senderName = `${sender.firstname} ${sender.lastname}`;
 
-            // Fetch group details
             const group = await Group.findById(msg.groupId, 'name');
-            if (!group) {
-                console.error('Group not found:', msg.groupId);
-                return;
-            }
-            const groupName = group.name;
+            if (!group) return;
 
-            // Emit group message to all users in the group
             io.to(msg.groupId).emit('group message', msg);
-
-            // Notify all users in the group
             io.to(msg.groupId).emit('notification', {
                 type: 'group',
-                content: `${senderName} sent a message in ${groupName}`
+                content: `${senderName} sent a message in ${group.name}`,
             });
         } catch (error) {
-            console.error('Error handling group message:', error);
+            console.error('group message error:', error.message);
         }
     });
 
-    // In the 'chat message' event handler
     socket.on('chat message', async (msg) => {
-        console.log('Message received on server:', msg);
-
-        const recipientSocketId = userSocketMap.get(msg.receiver);
-        if (!recipientSocketId) {
-            console.error('Recipient socket ID not found for:', msg.receiver);
-        } else {
-            io.to(recipientSocketId).emit('chat message', msg);
-            // Fetch sender details for notification
-            const sender = await Register.findById(msg.sender, 'firstname lastname');
-            if (!sender) {
-                console.error('Sender not found:', msg.sender);
-                return;
+        const recipient = userSocketMap.get(msg.receiver);
+        if (recipient) {
+            io.to(recipient.socketId).emit('chat message', msg);
+            try {
+                const sender = await Register.findById(msg.sender, 'firstname lastname');
+                if (sender) {
+                    io.to(recipient.socketId).emit('notification', {
+                        type: 'private',
+                        content: `New message from ${sender.firstname} ${sender.lastname}`,
+                    });
+                }
+            } catch (err) {
+                console.error('notification error:', err.message);
             }
-            const senderName = `${sender.firstname} ${sender.lastname}`;
-            io.to(recipientSocketId).emit('notification', {
-                type: 'private',
-                content: `New message from ${senderName}`
-            });
         }
 
-        const senderSocketId = userSocketMap.get(msg.sender);
-        if (senderSocketId) {
-            io.to(senderSocketId).emit('chat message', msg);
-        } else {
-            console.error('Sender socket ID not found for:', msg.sender);
+        // echo back to sender's own socket too
+        const senderEntry = userSocketMap.get(msg.sender);
+        if (senderEntry) {
+            io.to(senderEntry.socketId).emit('chat message', msg);
         }
     });
 
-    // Broadcast typing status to other users
     socket.on('typing', (data) => {
-        const { recipientId } = data;
-        const recipientSocketId = onlineUsers.get(recipientId);
-        if (recipientSocketId) {
-            io.to(recipientSocketId).emit('typing', data);
+        const recipient = userSocketMap.get(data.recipientId);
+        if (recipient) {
+            io.to(recipient.socketId).emit('typing', data);
         }
     });
 
-    // Handle user logout
     socket.on('logout', (username) => {
         onlineUsers.delete(username);
         io.emit('update users', Array.from(onlineUsers.keys()));
-        console.log('User logged out:', username);
     });
 
     socket.on('disconnect', () => {
-        // Remove the user ID to socket ID mapping on disconnect
-        const disconnectedUser = Array.from(userSocketMap.entries()).find(([userId, id]) => id === socket.id);
-        if (disconnectedUser) {
-            const [userId] = disconnectedUser;
+        // find the user who owned this socket and remove them from both maps
+        const entry = Array.from(userSocketMap.entries()).find(
+            ([, val]) => val.socketId === socket.id
+        );
+        if (entry) {
+            const [userId, { username }] = entry;
             userSocketMap.delete(userId);
-            onlineUsers.delete(userId); // Remove from onlineUsers if needed
+            onlineUsers.delete(username); // use username key — was using userId before (bug)
             io.emit('update users', Array.from(onlineUsers.keys()));
-            console.log('User disconnected:', userId);
         }
     });
 });
 
+// 404 for unmatched routes
 app.use((req, res, next) => {
-    const err = new Error("Not Found");
-    err.status = 404;
+    const err    = new Error('Not Found');
+    err.status   = 404;
     next(err);
 });
 
-app.use((err, req, res, next) => {
-    res.status(err.status || 500);
-    res.send({
-        error: {
-            status: err.status || 500,
-            message: err.message
-        }
-    });
+app.use(errorHandler);
+
+server.listen(process.env.PORT || 4000, () => {
+    console.log('server running on http://localhost:4000');
 });
-
-server.listen(process.env.PORT || 4000, function() {
-    console.log('Now listening for requests on: http://localhost:4000');
-});
-
-
