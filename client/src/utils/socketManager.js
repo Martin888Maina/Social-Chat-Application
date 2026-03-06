@@ -5,7 +5,7 @@ let socket = null;
 
 export const getSocket = () => {
     if (!socket) {
-        socket = io(process.env.REACT_APP_API_URL || 'http://localhost:4000', {
+        socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000', {
             transports: ['websocket'],
         });
     }
