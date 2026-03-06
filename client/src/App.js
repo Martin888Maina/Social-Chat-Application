@@ -1,72 +1,55 @@
 import './App.css';
 import React from 'react';
-import {BrowserRouter as Router, Switch} from 'react-router-dom';
-import { Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 
-import LoginForm from './components/LoginForm';
-import RegisterForm from './components/RegisterForm';
-import Logout from './components/Logout';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 
-// Forgot password
+import LoginForm      from './components/LoginForm';
+import RegisterForm   from './components/RegisterForm';
+import Logout         from './components/Logout';
 import ForgotPassword from './components/ForgotPassword';
-//Reset Password
-import PasswordReset from './components/PasswordReset';
-// Not found section
-import NotFound from './components/NotFound';
+import PasswordReset  from './components/PasswordReset';
+import NotFound       from './components/NotFound';
 
-// Messaging area
-import UserChat from './components/user/UserChat';
-
-// User Profile area
+import UserChat    from './components/user/UserChat';
 import UserProfile from './components/user/UserProfile';
 
-// Group Messaging area
-import GroupChat from './components/group/GroupChat';
-
-// Group Messaging area
+import GroupChat   from './components/group/GroupChat';
 import CreateGroup from './components/group/CreateGroup';
 
 function App() {
-  return (
-    <Router>
-        <div className="App">
-            <Switch>  
-                  {/* Forms */}
-                  <Route exact path="/"                             component={RegisterForm} />
+    return (
+        <AuthProvider>
+            <Router>
+                <div className="App">
+                    <Navbar />
 
-                  <Route path="/LoginForm"                          component={LoginForm} />
+                    <Switch>
+                        {/* public routes */}
+                        <Route exact path="/"         component={RegisterForm} />
+                        <Route path="/LoginForm"       component={LoginForm} />
+                        <Route path="/ForgotPassword"  component={ForgotPassword} />
+                        <Route path="/PasswordReset"   component={PasswordReset} />
 
-                  {/* Additional functionalities */}
-                  <Route path="/ForgotPassword"                     component={ForgotPassword} />
-                  
-                  <Route path="/PasswordReset"                      component={PasswordReset} />
+                        {/* protected — redirect to /LoginForm if not authenticated */}
+                        <ProtectedRoute path="/UserChat"    component={UserChat} />
+                        <ProtectedRoute path="/UserProfile" component={UserProfile} />
+                        <ProtectedRoute path="/GroupChat"   component={GroupChat} />
+                        <ProtectedRoute path="/CreateGroup" component={CreateGroup} />
+                        <ProtectedRoute path="/Logout"      component={Logout} />
 
-                  {/* Messaging Area */}
-                  <Route path="/UserChat"                           component={UserChat} />
+                        {/* 404 — must stay last */}
+                        <Route path="*" component={NotFound} />
+                    </Switch>
 
-                  {/* User Profile Area */}
-                   <Route path="/UserProfile"                       component={UserProfile} />
-
-                  {/* Group Messaging Area */}
-                  <Route path="/GroupChat"                          component={GroupChat} />
-
-                  {/* Create Group Area */}
-                  <Route path="/CreateGroup"                        component={CreateGroup} />
-
-                  {/* logout button */}
-                  <Route path="/Logout"                             component={Logout} />
-
-                  {/* Not found page */}
-                  {/* Remember to have he notfound page at the absolute bottom of the app.js file code */}
-                  <Route path ="*"                                  component={NotFound} />
-
-            </Switch>
-            
-        </div>
-
-    </Router>
-    
-  );
+                    <Footer />
+                </div>
+            </Router>
+        </AuthProvider>
+    );
 }
 
 export default App;
