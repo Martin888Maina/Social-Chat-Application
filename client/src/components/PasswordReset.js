@@ -33,11 +33,8 @@ const PasswordReset = () => {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    console.log('URL Params:', urlParams);
-
     const token = urlParams.get('token');
-    console.log('Token:', token);
-   
+
     try {
       const response = await api.post('/Password/reset', { token, newPassword });
 
@@ -48,29 +45,14 @@ const PasswordReset = () => {
           text: 'Your password has been successfully reset.',
           confirmButtonText: 'OK'
         });
-        console.log('Password reset successful');
-      } else {
-        // Handle errors, show a message to the user, etc.
-        console.error('Password reset failed:', response.data.message);
       }
     } catch (error) {
-      console.error('Error resetting password:', error);
-
       Swal.fire({
         icon: 'error',
         title: 'Error Resetting Password',
         text: 'An error occurred while resetting your password. Please try again later.',
         confirmButtonText: 'OK'
       });
-
-      if (error.response) {
-        console.error('Server responded with status:', error.response.status);
-        console.error('Server response data:', error.response.data);
-      } else if (error.request) {
-        console.error('No response received from the server. Request:', error.request);
-      } else {
-        console.error('Unexpected error:', error.message);
-      }
     }
   };
 

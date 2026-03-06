@@ -41,40 +41,23 @@ const registerSchema = new Schema({
 
 
 
-// Hash the password before saving the user
+// hash password before saving — skip if it wasn't changed
 registerSchema.pre('save', async function(next) {
-    console.log('Hashing password for user:', this.email); // Log email for context
-    console.log('Password before hashing:', this.password); // Log password before hashing
     try {
-
-        // Check if the password is already hashed
-        if (!this.isModified('password')) {
-            // If password field is not modified, skip hashing
-            return next();
-        }
-
+        if (!this.isModified('password')) return next();
         const salt = await bcrypt.genSalt(10);
-        console.log('Generated salt:', salt); // Log the salt
-        const hashedPwd = await bcrypt.hash(this.password, salt);
-        console.log('Hashed password:', hashedPwd); // Log the hashed password
-        this.password = hashedPwd;
+        this.password = await bcrypt.hash(this.password, salt);
         next();
     } catch (error) {
-        console.error('Error hashing password:', error); // Log the error
         next(error);
     }
 });
 
-// Method to compare the hashed password with the user input password
+// compare the plain text input against the stored hash
 registerSchema.methods.isValidPassword = async function(password) {
-    console.log('Comparing password for user:', this.email); // Log email for context
-    console.log('Stored hashed password:', this.password); // Log the hashed passwor
     try {
-        const result = await bcrypt.compare(password, this.password);
-        console.log('Password match result:', result); // Log the comparison result
-        return result;
+        return await bcrypt.compare(password, this.password);
     } catch (error) {
-        console.error('Error comparing passwords:', error); // Log the error
         throw error;
     }
 }

@@ -49,7 +49,6 @@ const CreateGroup = () => {
         window.location.href = '/GroupChat';
       });
 
-      console.log('Group created successfully:', response.data);
     } catch (error) {
       Swal.fire({
         icon: 'error',
