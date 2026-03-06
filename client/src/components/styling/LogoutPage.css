@@ -1,0 +1,26 @@
+.logout-container {
+    text-align: center;
+    margin-top: 100px;
+    background-image: url("https://images.unsplash.com/photo-1516281717304-181e285c6e58?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjA2fHxyZWFsJTIwZXN0YXRlfGVufDB8fDB8fHww");
+    background-size: cover;
+    background-position: center;
+    height: 100vh; /* Set the height to cover the entire viewport */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.logout-heading {
+    color: #1e85e1;
+    margin-bottom: 50px;
+    font-size: 36px;
+}
+
+.logout-button {
+    cursor: pointer; 
+}
+
+.button {
+    width: 20%;
+    margin: 0 auto; /* Center the button horizontally */
+}

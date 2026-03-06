@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# environment variables — never commit real credentials
+.env
+client/.env
+server/.env
+
+# production build output
+client/build/
+
+# uploaded files
+server/uploads/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# editor directories
+.vscode/
+.idea/
+
+# claude file
+claude.md

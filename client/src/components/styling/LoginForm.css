@@ -1,0 +1,59 @@
+/* body {
+    background-color: plum; 
+} */
+
+.login-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+}
+
+.login-form .form-control {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.login-form .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.login-form .btn {
+    width: 100%;
+}
+
+.forgot-password {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.register-section {
+    text-align: center;
+}
+
+.register-section p {
+    margin-bottom: 5px;
+}
+
+.register-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.show-password-label {
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .show-password-label:hover {
+    color: blue; /* Change color to your preferred hover color */
+  }

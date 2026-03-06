@@ -1,0 +1,35 @@
+.not-found-container {
+  text-align: center;
+  margin-top: 100px;
+  background-image: url("../../assets/images/404\ Not\ Found.png");
+  background-size: contain; 
+  background-repeat: no-repeat; 
+  background-position: center;
+  height: 100vh; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+  
+  .not-found-heading {
+    color: #dc3545;
+    font-size: 48px;
+  }
+  
+  .not-found-message {
+    margin-top: 20px;
+    margin-bottom: 40px;
+    font-size: 24px;
+  }
+  
+  .home-button {
+    font-size: 18px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .button {
+    width: 20%;
+    margin: 0 auto; /* Center the button horizontally */
+}
