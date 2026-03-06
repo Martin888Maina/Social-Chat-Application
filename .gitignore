@@ -11,8 +11,9 @@ server/.env
 # production build output
 client/build/
 
-# uploaded files
-server/uploads/
+# uploaded files — ignore actual uploads but keep the directory via .gitkeep
+server/uploads/*
+!server/uploads/.gitkeep
 
 # logs
 npm-debug.log*

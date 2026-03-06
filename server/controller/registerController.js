@@ -1,13 +1,10 @@
-//This code has been lifted from the studentController.js. Modify it accordingly to reflect the userController.js file
-//registerController.js file is responsible for error handling for the register routes.
-//The follwing code is correct
-
-const mongoose               = require('mongoose');// importing the db connection
-const Register               = require('../models/registerModel');// importing the model
-const createError            = require('http-errors'); // importing the error handling
-const { authSchema }         = require('../auth/auth_Schema'); //importing the email & password validation npm package for register form
-const { authLoginSchema }    = require('../auth/auth_Login'); //importing the email & password validation npm package for login form
-const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../helpers/jwtHelper'); // importing the JWT package due to accessToken used in code
+const mongoose            = require('mongoose');
+const path                = require('path');
+const Register            = require('../models/registerModel');
+const createError         = require('http-errors');
+const { authSchema }      = require('../auth/auth_Schema');
+const { authLoginSchema } = require('../auth/auth_Login');
+const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../helpers/jwtHelper');
 
 module.exports = {
 
@@ -183,19 +180,29 @@ module.exports = {
 
     updateProfilePictureUrl: async (req, res, next) => {
         try {
-            const userId = req.payload.aud; // Extract user ID from JWT token payload
-            const { profilePictureUrl } = req.body;
-    
-            // Update profile picture URL
-            const updatedUser = await Register.findByIdAndUpdate(userId, {
-                profilePicture: profilePictureUrl
-            }, { new: true });
-    
+            const userId = req.payload.aud;
+
+            let profilePicture;
+
+            if (req.file) {
+                // multer stored a file — build a URL the client can use to fetch it
+                profilePicture = `/uploads/${req.file.filename}`;
+            } else if (req.body.profilePictureUrl) {
+                // plain URL string submitted from the form
+                profilePicture = req.body.profilePictureUrl;
+            } else {
+                throw createError(400, 'No file or URL provided');
+            }
+
+            const updatedUser = await Register.findByIdAndUpdate(
+                userId,
+                { profilePicture },
+                { new: true }
+            );
+
             if (!updatedUser) throw createError.NotFound('User not found');
-    
-            res.send({
-                profilePicture: updatedUser.profilePicture
-            });
+
+            res.send({ profilePicture: updatedUser.profilePicture });
         } catch (error) {
             next(error);
         }

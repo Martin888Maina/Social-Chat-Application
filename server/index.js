@@ -4,6 +4,7 @@ require('./config/init_mongodb');
 const express    = require('express');
 const cors       = require('cors');
 const http       = require('http');
+const path       = require('path');
 const socketIo   = require('socket.io');
 const mongoose   = require('mongoose');
 const helmet     = require('helmet');
@@ -23,6 +24,9 @@ const server = http.createServer(app);
 
 // security headers
 app.use(helmet());
+
+// serve uploaded profile pictures as static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',

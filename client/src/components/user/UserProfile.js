@@ -13,8 +13,9 @@ const UserProfile = () => {
     profilePicture: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState('');
-  const [message, setMessage] = useState('');
+  const [imageUrl, setImageUrl]         = useState('');
+  const [previewUrl, setPreviewUrl]     = useState('');
+  const [message, setMessage]           = useState('');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -35,13 +36,17 @@ const UserProfile = () => {
   };
 
   const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
-    setImageUrl(''); // Clear URL input when file is selected
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    setImageUrl('');
+    // show a local preview before the upload happens
+    if (file) setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleUrlChange = (e) => {
     setImageUrl(e.target.value);
-    setSelectedFile(null); // Clear file input when URL is entered
+    setSelectedFile(null);
+    setPreviewUrl('');
   };
 
   const handleProfileUpdate = async (e) => {
@@ -74,7 +79,9 @@ const UserProfile = () => {
         await api.post('/Register/updateProfilePictureUrl', { profilePictureUrl: imageUrl });
       }
       setMessage('Profile picture updated successfully!');
-      setUserData({ ...userData, profilePicture: imageUrl });
+      // if a file was uploaded, clear the preview blob URL
+      if (selectedFile) setPreviewUrl('');
+      setUserData({ ...userData, profilePicture: imageUrl || userData.profilePicture });
     } catch (error) {
       console.error('failed to update profile picture:', error);
       setMessage('Error updating profile picture. Please try again.');
@@ -148,9 +155,10 @@ const UserProfile = () => {
           onChange={handleUrlChange}
           className="form-control"
         />
-        {userData.profilePicture && (
+        {/* show local preview while picking a file, otherwise show the saved picture */}
+        {(previewUrl || userData.profilePicture) && (
           <img
-            src={userData.profilePicture}
+            src={previewUrl || userData.profilePicture}
             alt="Profile"
             className="profile-picture"
           />
