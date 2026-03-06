@@ -18,6 +18,14 @@ routes.post('/groups/:groupId/messages', verifyAccessToken, groupController.Send
 // Get messages for a group
 routes.get('/groups/:groupId/messages', verifyAccessToken, groupController.GetGroupMessages);
 
+// Get all members of a group
+routes.get('/groups/:groupId/members', verifyAccessToken, groupController.GetGroupMembers);
+
+// Remove a member from a group (creator only)
+routes.delete('/groups/:groupId/members/:userId', verifyAccessToken, groupController.RemoveMemberFromGroup);
+
+// Delete a group (creator only)
+routes.delete('/groups/:groupId', verifyAccessToken, groupController.DeleteGroup);
 
 module.exports = routes;
 

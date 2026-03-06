@@ -12,6 +12,7 @@ routes.get('/user',              verifyAccessToken, registerController.getUser);
 routes.get('/users',             verifyAccessToken, registerController.getAllUsers);
 routes.get('/userById',          verifyAccessToken, registerController.getUserById);
 routes.get('/userIdByUsername',  verifyAccessToken, registerController.getUserIdByUsername);
+routes.get('/stats',             verifyAccessToken, registerController.getStats);
 
 routes.patch('/updateProfile', verifyAccessToken, registerController.updateProfile);
 

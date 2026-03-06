@@ -17,8 +17,11 @@ import NotFound       from './components/NotFound';
 import UserChat    from './components/user/UserChat';
 import UserProfile from './components/user/UserProfile';
 
-import GroupChat   from './components/group/GroupChat';
-import CreateGroup from './components/group/CreateGroup';
+import GroupChat     from './components/group/GroupChat';
+import CreateGroup   from './components/group/CreateGroup';
+import GroupSettings from './components/group/GroupSettings';
+
+import Dashboard from './components/dashboard/Dashboard';
 
 function App() {
     return (
@@ -37,9 +40,11 @@ function App() {
                         {/* protected — redirect to /LoginForm if not authenticated */}
                         <ProtectedRoute path="/UserChat"    component={UserChat} />
                         <ProtectedRoute path="/UserProfile" component={UserProfile} />
-                        <ProtectedRoute path="/GroupChat"   component={GroupChat} />
-                        <ProtectedRoute path="/CreateGroup" component={CreateGroup} />
-                        <ProtectedRoute path="/Logout"      component={Logout} />
+                        <ProtectedRoute path="/Dashboard"                component={Dashboard} />
+                        <ProtectedRoute path="/GroupChat"               component={GroupChat} />
+                        <ProtectedRoute path="/CreateGroup"             component={CreateGroup} />
+                        <ProtectedRoute path="/GroupSettings/:groupId"  component={GroupSettings} />
+                        <ProtectedRoute path="/Logout"                  component={Logout} />
 
                         {/* 404 — must stay last */}
                         <Route path="*" component={NotFound} />

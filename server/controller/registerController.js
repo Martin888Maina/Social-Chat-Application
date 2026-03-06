@@ -1,6 +1,8 @@
 const mongoose            = require('mongoose');
 const path                = require('path');
 const Register            = require('../models/registerModel');
+const Message             = require('../models/messageModel');
+const Group               = require('../models/groupModel');
 const createError         = require('http-errors');
 const { authSchema }      = require('../auth/auth_Schema');
 const { authLoginSchema } = require('../auth/auth_Login');
@@ -203,6 +205,20 @@ module.exports = {
             if (!updatedUser) throw createError.NotFound('User not found');
 
             res.send({ profilePicture: updatedUser.profilePicture });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    getStats: async (req, res, next) => {
+        try {
+            const [totalUsers, totalMessages, totalGroups] = await Promise.all([
+                Register.countDocuments(),
+                Message.countDocuments(),
+                Group.countDocuments(),
+            ]);
+
+            res.status(200).json({ totalUsers, totalMessages, totalGroups });
         } catch (error) {
             next(error);
         }
