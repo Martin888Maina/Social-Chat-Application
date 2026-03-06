@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
-import axios from "axios";
 import { Link, useHistory } from "react-router-dom";
+import api from "../services/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -47,8 +47,6 @@ const RegisterForm = () => {
   const submitRegister = (e) => {
     e.preventDefault();
 
-    const token = sessionStorage.getItem("access_token");
-
     // Validation checks
     if (!data.firstname.trim() || !data.lastname.trim() || !data.email.trim() || !data.telephone.trim() || !data.password.trim() || !data.confirmPassword.trim()) {
       toast.error("Please fill out all fields.", {
@@ -82,16 +80,11 @@ const RegisterForm = () => {
       return;
     }
 
-    // Exclude confirmPassword from the payload
+    // don't send confirmPassword to the server
     const { confirmPassword, ...registrationData } = data;
 
-    axios
-      .post("http://localhost:4000/Register/register", registrationData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
+    api
+      .post("/Register/register", registrationData)
       .then((res) => {
         Swal.fire({
           icon: 'success',

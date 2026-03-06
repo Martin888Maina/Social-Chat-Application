@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useHistory } from "react-router-dom"; // Import useHistory for navigation
-import '../styling/UserProfile.css'; // Ensure this file exists for custom styling
+import { useHistory } from 'react-router-dom';
+import api from '../../services/api';
+import '../styling/UserProfile.css';
 
 const UserProfile = () => {
   const history = useHistory(); // Initialize history
@@ -19,20 +19,13 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = sessionStorage.getItem('access_token');
-        if (!token) {
-          throw new Error('No token found in sessionStorage');
-        }
-        const response = await axios.get('http://localhost:4000/Register/user', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/Register/user');
         setUserData(response.data);
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('failed to fetch profile:', error);
         setMessage('Error fetching profile. Please try again later.');
       }
     };
-
     fetchUserProfile();
   }, []);
 
@@ -54,74 +47,43 @@ const UserProfile = () => {
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {
-      const token = sessionStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No token found in sessionStorage');
-      }
-
-      const formData = new FormData();
-      formData.append('firstname', userData.firstname);
-      formData.append('lastname', userData.lastname);
-      formData.append('email', userData.email);
-      formData.append('telephone', userData.telephone);
-
-      const response = await axios.patch('http://localhost:4000/Register/updateProfile', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await api.patch('/Register/updateProfile', {
+        firstname: userData.firstname,
+        lastname:  userData.lastname,
+        email:     userData.email,
+        telephone: userData.telephone,
       });
-
       setMessage('Profile updated successfully!');
       setUserData(response.data);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('failed to update profile:', error);
       setMessage('Error updating profile. Please try again.');
     }
   };
 
   const handleProfilePictureUpdate = async () => {
     try {
-      const token = sessionStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No token found in sessionStorage');
-      }
-
-      const data = {
-        profilePictureUrl: imageUrl
-      };
-
       if (selectedFile) {
         const formData = new FormData();
         formData.append('profilePicture', selectedFile);
-
-        await axios.post('http://localhost:4000/Register/updateProfilePictureUrl', formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+        // multipart upload — override the default content-type for this one call
+        await api.post('/Register/updateProfilePictureUrl', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else if (imageUrl) {
-        await axios.post('http://localhost:4000/Register/updateProfilePictureUrl', data, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        await api.post('/Register/updateProfilePictureUrl', { profilePictureUrl: imageUrl });
       }
-
       setMessage('Profile picture updated successfully!');
       setUserData({ ...userData, profilePicture: imageUrl });
     } catch (error) {
-      console.error('Error updating profile picture:', error);
+      console.error('failed to update profile picture:', error);
       setMessage('Error updating profile picture. Please try again.');
     }
   };
 
-    // Function to navigate to UserChat page
-    const handleChatRedirect = () => {
-      history.push('/UserChat'); // Adjust the path as needed
-    };
+  const handleChatRedirect = () => {
+    history.push('/UserChat');
+  };
   
 
   return (

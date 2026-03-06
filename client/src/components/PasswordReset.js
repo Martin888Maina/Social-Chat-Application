@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './styling/PasswordReset.css';
@@ -39,15 +39,7 @@ const PasswordReset = () => {
     console.log('Token:', token);
    
     try {
-      const response = await axios.post(
-        'http://localhost:4000/Password/reset',
-        { token, newPassword }, 
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await api.post('/Password/reset', { token, newPassword });
 
       if (response.status === 200) {
         Swal.fire({

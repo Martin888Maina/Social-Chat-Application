@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Swal from 'sweetalert2';
+import api from '../../services/api';
 import Select from 'react-select';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import '../styling/CreateGroup.css';
@@ -13,12 +13,7 @@ const CreateGroup = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = sessionStorage.getItem("access_token");
-        if (!token) throw new Error('No token found in sessionStorage');
-
-        const response = await axios.get('http://localhost:4000/Register/users', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/Register/users');
         const userOptions = response.data.map(user => ({
           value: user._id,
           label: `${user.firstname} ${user.lastname}`
@@ -40,14 +35,9 @@ const CreateGroup = () => {
     e.preventDefault();
 
     try {
-      const token = sessionStorage.getItem("access_token");
-      if (!token) throw new Error('No token found in sessionStorage');
-
-      const response = await axios.post('http://localhost:4000/Group/groups', {
+      const response = await api.post('/Group/groups', {
         name: groupName,
-        members: selectedMembers
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        members: selectedMembers,
       });
 
       Swal.fire({

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import 'react-toastify/dist/ReactToastify.css';
 import './styling/ForgotPassword.css'; 
 import Swal from 'sweetalert2';
@@ -18,16 +18,8 @@ const ForgotPassword = () => {
   const handleResetPassword = (e) => {
     e.preventDefault();
 
-    axios
-      .post(
-        'http://localhost:4000/Password/forgot',
-        { email },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+    api
+      .post('/Password/forgot', { email })
       .then((res) => {
         Swal.fire({
           icon: 'success',

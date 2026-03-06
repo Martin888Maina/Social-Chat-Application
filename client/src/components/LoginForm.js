@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
-import axios from "axios";
 import { Link, useHistory } from "react-router-dom";
+import api from "../services/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -32,7 +32,6 @@ const LoginForm = () => {
 
   const submitLogin = (e) => {
     e.preventDefault();
-    const token = sessionStorage.getItem("access_token");
 
     if (!data.email.trim() || !data.password.trim()) {
       toast.error("Please fill out all fields.", {
@@ -50,13 +49,8 @@ const LoginForm = () => {
       return;
     }
 
-    axios
-      .post("http://localhost:4000/Register/login", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
+    api
+      .post("/Register/login", data)
       .then((res) => {
         if (res.status === 200) {
           const { accessToken, refreshToken } = res.data;
