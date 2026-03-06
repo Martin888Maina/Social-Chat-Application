@@ -46,7 +46,7 @@ const CreateGroup = () => {
         text: 'The group was created successfully!',
         confirmButtonText: 'OK'
       }).then(() => {
-        window.location.href = '/GroupChat';
+        window.location.href = '/groups';
       });
 
     } catch (error) {

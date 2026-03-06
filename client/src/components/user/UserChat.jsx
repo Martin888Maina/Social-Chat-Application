@@ -120,7 +120,7 @@ const UserChat = () => {
         sessionStorage.removeItem('access_token');
         sessionStorage.removeItem('refresh_token');
         socket.emit('logout', username);
-        history.push('/LoginForm');
+        history.push('/login');
     };
 
     const handleReceiverSelection = async (selectedOption) => {
@@ -166,9 +166,10 @@ const UserChat = () => {
             </div>
 
             <div className="chat-actions">
-                <button onClick={() => history.push('/UserProfile')} className="btn btn-info profile-btn">Profile</button>
+                <button onClick={() => history.push('/dashboard')} className="btn btn-outline-secondary profile-btn">Home</button>
+                <button onClick={() => history.push('/profile')} className="btn btn-info profile-btn">Profile</button>
+                <button onClick={() => history.push('/groups')} className="btn btn-secondary group-btn">Groups</button>
                 <button onClick={handleLogout} className="btn btn-danger logout-btn">Logout</button>
-                <button onClick={() => history.push('/GroupChat')} className="btn btn-secondary group-btn">Groups</button>
             </div>
 
             <div className="users-list">

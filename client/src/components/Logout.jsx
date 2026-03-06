@@ -14,7 +14,7 @@ const Logout = () => {
         sessionStorage.removeItem('refresh_token');
 
         // Redirect the user to the landing page
-        history.push('/LoginForm');
+        history.push('/login');
     }
 
     const handleSubmit = (e) => {

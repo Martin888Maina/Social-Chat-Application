@@ -58,13 +58,13 @@ const Dashboard = () => {
             <div className="dashboard-actions">
                 <h4>Quick Access</h4>
                 <div className="action-buttons">
-                    <button onClick={() => history.push('/UserChat')} className="btn btn-primary action-btn">
+                    <button onClick={() => history.push('/chat')} className="btn btn-primary action-btn">
                         Private Chat
                     </button>
-                    <button onClick={() => history.push('/GroupChat')} className="btn btn-secondary action-btn">
+                    <button onClick={() => history.push('/groups')} className="btn btn-secondary action-btn">
                         Group Chat
                     </button>
-                    <button onClick={() => history.push('/UserProfile')} className="btn btn-outline-primary action-btn">
+                    <button onClick={() => history.push('/profile')} className="btn btn-outline-primary action-btn">
                         My Profile
                     </button>
                 </div>

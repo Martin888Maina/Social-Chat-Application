@@ -136,7 +136,8 @@ const GroupChat = () => {
     return (
         <div className="chat-container">
             <div className="group-chat-header">
-                <button onClick={() => history.push('/CreateGroup')} className="btn btn-primary create-group-btn">
+                <button onClick={() => history.push('/dashboard')} className="btn btn-outline-secondary">Home</button>
+                <button onClick={() => history.push('/create-group')} className="btn btn-primary create-group-btn">
                     Create New Group
                 </button>
             </div>
@@ -201,8 +202,8 @@ const GroupChat = () => {
                 </form>
             </div>
 
-            <button onClick={() => history.push('/UserChat')} className="btn btn-info mt-3 go-to-user-chat">
-                Go to User Chat
+            <button onClick={() => history.push('/chat')} className="btn btn-info mt-3 go-to-user-chat">
+                Go to Private Chat
             </button>
         </div>
     );

@@ -23,7 +23,7 @@ api.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             sessionStorage.removeItem('access_token');
             sessionStorage.removeItem('refresh_token');
-            window.location.href = '/LoginForm';
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

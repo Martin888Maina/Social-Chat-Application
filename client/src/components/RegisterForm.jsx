@@ -101,7 +101,7 @@ const RegisterForm = () => {
             confirmPassword: "",
           });
 
-          history.push("/LoginForm");
+          history.push("/login");
         });
       })
       .catch((err) => {
@@ -204,7 +204,7 @@ const RegisterForm = () => {
 
         <div className="mt-3">
           <p>Already Registered?</p>
-          <Link to="./LoginForm" className="login-link">
+          <Link to="/login" className="login-link">
             Login into Account
           </Link>
         </div>

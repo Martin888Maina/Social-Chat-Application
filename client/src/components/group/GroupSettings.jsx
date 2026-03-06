@@ -70,7 +70,7 @@ const GroupSettings = () => {
         try {
             await api.delete(`/Group/groups/${groupId}`);
             Swal.fire({ icon: 'success', title: 'Group Deleted', text: 'The group has been deleted.', confirmButtonText: 'OK' })
-                .then(() => history.push('/GroupChat'));
+                .then(() => history.push('/groups'));
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Could not delete the group. Please try again.', confirmButtonText: 'OK' });
         }
@@ -84,7 +84,7 @@ const GroupSettings = () => {
         <div className="group-settings-container">
             <div className="group-settings-header">
                 <h2>{group?.name} — Settings</h2>
-                <button onClick={() => history.push('/GroupChat')} className="btn btn-outline-secondary btn-sm">
+                <button onClick={() => history.push('/groups')} className="btn btn-outline-secondary btn-sm">
                     Back to Groups
                 </button>
             </div>

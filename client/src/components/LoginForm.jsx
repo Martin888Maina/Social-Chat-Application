@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import { Link, useHistory } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -11,6 +12,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 
 const LoginForm = () => {
   const history = useHistory();
+  const { login } = useAuth();
   const [data, setData] = useState({
     email: "",
     password: "",
@@ -55,17 +57,12 @@ const LoginForm = () => {
         if (res.status === 200) {
           const { accessToken, refreshToken } = res.data;
 
-          sessionStorage.setItem("access_token", accessToken);
-          sessionStorage.setItem("refresh_token", refreshToken);
+          // update AuthContext state so ProtectedRoute sees the user as authenticated
+          login(accessToken, refreshToken);
 
-          Swal.fire({
-            icon: 'success',
-            title: 'Login Successful',
-            text: 'User Login successful',
-            confirmButtonText: 'OK'
-          }).then(() => {
-            history.push("/UserChat"); // Redirect to the main application page or dashboard
-          });
+          // redirect immediately — don't wait for the dialog so the context
+          // state has already updated by the time ProtectedRoute checks it
+          history.push("/dashboard");
 
           setData({
             email: "",
@@ -122,7 +119,7 @@ const LoginForm = () => {
         </Button>
 
         <div className="mt-3">
-          <Link to="./ForgotPassword" className="forgot-password">
+          <Link to="/forgot-password" className="forgot-password">
             Forgot your password?
           </Link>
         </div>

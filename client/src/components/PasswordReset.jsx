@@ -120,7 +120,7 @@ const PasswordReset = () => {
 
         <div className="link-section mt-5">
           <p>Want to head back to the Login?</p>
-          <Link to="./LoginForm" className="login-page">
+          <Link to="/login" className="login-page">
             Proceed to Login page
           </Link>
         </div>

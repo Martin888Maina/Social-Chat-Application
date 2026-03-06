@@ -53,17 +53,11 @@ const ForgotPassword = () => {
 
         <div className="link-section mt-5">
           <p>Want to head back to the Login?</p>
-          <Link to="./LoginForm" className="forgot-login">
+          <Link to="/login" className="forgot-login">
             Proceed to Login page
           </Link>
         </div>
 
-        <div className="link-section mt-5">
-          <p>Want to proceed to the Password Reset Page?</p>
-          <Link to="./PasswordReset" className="password-reset">
-            Proceed to Password Reset page
-          </Link>
-        </div>
       </Form>
     </div>
   );

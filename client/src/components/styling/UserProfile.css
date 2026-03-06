@@ -1,7 +1,8 @@
 .profile-container {
+    width: 100%;
     max-width: 600px;
     margin: 40px auto;
-    padding: 36px 32px;
+    padding: 36px 40px;
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -15,9 +16,53 @@
     margin-bottom: 24px;
 }
 
+/* each label + input pair */
+.profile-container .form-group {
+    margin-bottom: 18px;
+}
+
+.profile-container .form-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #424242;
+    margin-bottom: 6px;
+}
+
+.profile-container .form-control {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: #212121;
+    background-color: #ffffff;
+}
+
+.profile-container .form-control:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+/* picture section sits below the form with a divider */
+.profile-picture-section {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.profile-picture-section label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #424242;
+    margin-bottom: 10px;
+}
+
 .profile-picture-wrapper {
     text-align: center;
-    margin-bottom: 24px;
+    margin: 16px 0;
 }
 
 .profile-picture {
@@ -26,6 +71,8 @@
     object-fit: cover;
     border-radius: 50%;
     border: 3px solid #e0e0e0;
+    display: block;
+    margin: 12px 0;
 }
 
 .profile-picture-placeholder {
@@ -42,10 +89,30 @@
     text-transform: uppercase;
 }
 
+/* action buttons row */
+.profile-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
 .message {
-    color: #d32f2f;
+    padding: 10px 14px;
+    border-radius: 6px;
     font-size: 0.9rem;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.message.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-color: #ffcdd2;
 }
 
 @media (max-width: 640px) {

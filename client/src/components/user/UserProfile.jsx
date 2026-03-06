@@ -89,7 +89,7 @@ const UserProfile = () => {
   };
 
   const handleChatRedirect = () => {
-    history.push('/UserChat');
+    history.push('/chat');
   };
   
 
@@ -140,21 +140,26 @@ const UserProfile = () => {
         </div>
         <button type="submit" className="btn btn-primary">Update Profile</button>
       </form>
-      <div className="form-group">
-        <label>Profile Picture (Upload or URL)</label>
-        <input
-          type="file"
-          name="profilePicture"
-          onChange={handleFileChange}
-          className="form-control"
-        />
-        <input
-          type="text"
-          placeholder="Or enter image URL here"
-          value={imageUrl}
-          onChange={handleUrlChange}
-          className="form-control"
-        />
+
+      <div className="profile-picture-section">
+        <label>Profile Picture (Upload a file or paste a URL)</label>
+        <div className="form-group">
+          <input
+            type="file"
+            name="profilePicture"
+            onChange={handleFileChange}
+            className="form-control"
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="text"
+            placeholder="Or enter image URL here"
+            value={imageUrl}
+            onChange={handleUrlChange}
+            className="form-control"
+          />
+        </div>
         {/* show local preview while picking a file, otherwise show the saved picture */}
         {(previewUrl || userData.profilePicture) && (
           <img
@@ -163,9 +168,13 @@ const UserProfile = () => {
             className="profile-picture"
           />
         )}
-        <button onClick={handleProfilePictureUpdate} className="btn btn-secondary">Update Profile Picture</button>
+        <button onClick={handleProfilePictureUpdate} className="btn btn-secondary mt-2">Update Profile Picture</button>
       </div>
-      <button onClick={handleChatRedirect} className="btn btn-info">Back to Chat</button> {/* Button to redirect to UserChat */}
+
+      <div className="profile-actions">
+        <button onClick={() => history.push('/dashboard')} className="btn btn-outline-secondary">Home</button>
+        <button onClick={handleChatRedirect} className="btn btn-info">Back to Chat</button>
+      </div>
     </div>
   );
 };

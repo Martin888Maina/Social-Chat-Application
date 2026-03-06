@@ -30,25 +30,27 @@ function App() {
                 <div className="App">
                     <Navbar />
 
+                    <main className="app-content">
                     <Switch>
                         {/* public routes */}
-                        <Route exact path="/"         component={RegisterForm} />
-                        <Route path="/LoginForm"       component={LoginForm} />
-                        <Route path="/ForgotPassword"  component={ForgotPassword} />
-                        <Route path="/PasswordReset"   component={PasswordReset} />
+                        <Route exact path="/"           component={RegisterForm} />
+                        <Route path="/login"            component={LoginForm} />
+                        <Route path="/forgot-password"  component={ForgotPassword} />
+                        <Route path="/reset-password"   component={PasswordReset} />
 
-                        {/* protected — redirect to /LoginForm if not authenticated */}
-                        <ProtectedRoute path="/UserChat"    component={UserChat} />
-                        <ProtectedRoute path="/UserProfile" component={UserProfile} />
-                        <ProtectedRoute path="/Dashboard"                component={Dashboard} />
-                        <ProtectedRoute path="/GroupChat"               component={GroupChat} />
-                        <ProtectedRoute path="/CreateGroup"             component={CreateGroup} />
-                        <ProtectedRoute path="/GroupSettings/:groupId"  component={GroupSettings} />
-                        <ProtectedRoute path="/Logout"                  component={Logout} />
+                        {/* protected — redirect to /login if not authenticated */}
+                        <ProtectedRoute path="/chat"                    component={UserChat} />
+                        <ProtectedRoute path="/profile"                 component={UserProfile} />
+                        <ProtectedRoute path="/dashboard"               component={Dashboard} />
+                        <ProtectedRoute path="/groups"                  component={GroupChat} />
+                        <ProtectedRoute path="/create-group"            component={CreateGroup} />
+                        <ProtectedRoute path="/group-settings/:groupId" component={GroupSettings} />
+                        <ProtectedRoute path="/logout"                  component={Logout} />
 
                         {/* 404 — must stay last */}
                         <Route path="*" component={NotFound} />
                     </Switch>
+                    </main>
 
                     <Footer />
                 </div>
@@ -58,5 +60,3 @@ function App() {
 }
 
 export default App;
-
-
