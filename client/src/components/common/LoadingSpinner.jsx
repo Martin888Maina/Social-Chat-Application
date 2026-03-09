@@ -1,5 +1,6 @@
 import React from 'react';
 import { Spinner } from 'react-bootstrap';
+import '../styling/Common.css';
 
 function LoadingSpinner({ message = 'Loading...' }) {
     return (

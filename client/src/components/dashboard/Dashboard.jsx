@@ -43,15 +43,15 @@ const Dashboard = () => {
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-value">{stats?.totalUsers ?? '—'}</div>
-                    <div className="stat-label">Registered Users</div>
+                    <div className="stat-label">Users on Platform</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-value">{stats?.totalMessages ?? '—'}</div>
-                    <div className="stat-label">Total Messages Sent</div>
+                    <div className="stat-label">Messages You Sent</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-value">{stats?.totalGroups ?? '—'}</div>
-                    <div className="stat-label">Active Groups</div>
+                    <div className="stat-label">Groups You Belong To</div>
                 </div>
             </div>
 

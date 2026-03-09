@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api from '../../services/api';
 import Select from 'react-select';
@@ -6,6 +7,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import '../styling/CreateGroup.css';
 
 const CreateGroup = () => {
+  const history = useHistory();
   const [groupName, setGroupName] = useState('');
   const [users, setUsers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -46,7 +48,7 @@ const CreateGroup = () => {
         text: 'The group was created successfully!',
         confirmButtonText: 'OK'
       }).then(() => {
-        window.location.href = '/groups';
+        history.push('/groups');
       });
 
     } catch (error) {

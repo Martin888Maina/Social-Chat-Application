@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Select from 'react-select';
 import { useHistory } from 'react-router-dom';
+import EmojiPicker from 'emoji-picker-react';
 import api from '../../services/api';
 import { getSocket } from '../../utils/socketManager';
 import { formatMessageTime } from '../../utils/formatDate';
@@ -10,110 +10,262 @@ const UserChat = () => {
     const history = useHistory();
     const socket  = getSocket();
 
-    const [message, setMessage]             = useState('');
-    const [messages, setMessages]           = useState([]);
-    const [username, setUsername]           = useState('');
-    const [users, setUsers]                 = useState([]);
-    const [isTyping, setIsTyping]           = useState(false);
-    const [userId, setUserId]               = useState('');
-    const [receiverId, setReceiverId]       = useState('');
-    const [searchQuery, setSearchQuery]     = useState('');
-    const [profileData, setProfileData]     = useState(null);
-    const [receiverName, setReceiverName]   = useState('');
-    const [notifications, setNotifications] = useState([]);
+    const [message, setMessage]                 = useState('');
+    const [messages, setMessages]               = useState([]);
+    const [username, setUsername]               = useState('');
+    const [userId, setUserId]                   = useState('');
+    const [profileData, setProfileData]         = useState(null);
+    const [receiverId, setReceiverId]           = useState('');
+    const [receiverName, setReceiverName]       = useState('');
+    const [isTyping, setIsTyping]               = useState(false);
+    const [typingName, setTypingName]           = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isSending, setIsSending]             = useState(false);
 
-    const messageEndRef    = useRef(null);
-    const typingTimeoutRef = useRef(null);
+    // conversation list with unread badges
+    const [conversations, setConversations]     = useState([]);
+    const [unreadCounts, setUnreadCounts]       = useState({});
 
-    // fetch current user info and full user list on mount
+    // new-chat user search
+    const [allUsers, setAllUsers]               = useState([]);
+    const [newChatQuery, setNewChatQuery]       = useState('');
+    const [showUserResults, setShowUserResults] = useState(false);
+
+    const [searchQuery, setSearchQuery]         = useState('');
+
+    const messageEndRef  = useRef(null);
+    const typingTimeout  = useRef(null);
+    const emojiPickerRef = useRef(null);
+    const inputRef       = useRef(null);
+    const newChatRef     = useRef(null);
+    // keep a ref to current receiverId so socket callbacks can read it without stale closure
+    const receiverIdRef  = useRef('');
+
+    useEffect(() => {
+        receiverIdRef.current = receiverId;
+    }, [receiverId]);
+
+    // load user info on mount and wire up socket listeners
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const userResponse  = await api.get('/Register/user');
-                const { _id, firstname, lastname, profilePicture } = userResponse.data;
-
+                const userRes = await api.get('/Register/user');
+                const { _id, firstname, lastname, profilePicture } = userRes.data;
                 setUsername(firstname);
                 setUserId(_id);
                 setProfileData({ firstname, lastname, profilePicture });
-
                 socket.emit('new user', _id, firstname);
 
-                const usersResponse = await api.get('/Register/users');
-                setUsers(usersResponse.data);
-            } catch (error) {
-                console.error('failed to load user data:', error);
+                // fetch full user list for the new-chat search
+                const usersRes = await api.get('/Register/users');
+                setAllUsers(usersRes.data);
+            } catch (err) {
+                console.error('failed to load user data:', err);
             }
         };
-
         fetchUserData();
 
         socket.on('chat message', (msg) => {
-            setMessages((prev) => [...prev, msg]);
-        });
+            const openReceiver = receiverIdRef.current;
 
-        socket.on('update users', (userList) => {
-            setUsers(userList);
+            if (msg.receiver === openReceiver || msg.sender === openReceiver) {
+                setMessages((prev) => {
+                    // dedup: drop if we already have this message by _id or clientId
+                    if (msg._id    && prev.some((m) => m._id      === msg._id))      return prev;
+                    if (msg.clientId && prev.some((m) => m.clientId === msg.clientId)) return prev;
+                    return [...prev, msg];
+                });
+            }
+
+            if (msg.sender && msg.sender !== openReceiver) {
+                setUnreadCounts((prev) => ({
+                    ...prev,
+                    [msg.sender]: (prev[msg.sender] || 0) + 1,
+                }));
+                setConversations((prev) =>
+                    prev.map((c) =>
+                        c.contactId === msg.sender
+                            ? { ...c, lastMessage: msg.content, lastTimestamp: msg.timestamp, unread: (c.unread || 0) + 1 }
+                            : c
+                    )
+                );
+            }
         });
 
         socket.on('typing', (data) => {
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            if (typingTimeout.current) clearTimeout(typingTimeout.current);
+            setTypingName(data.nick || 'Someone');
             setIsTyping(data.isTyping);
-            typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
-        });
-
-        socket.on('notification', (notification) => {
-            setNotifications((prev) => [...prev, notification]);
+            if (data.isTyping) {
+                typingTimeout.current = setTimeout(() => setIsTyping(false), 3000);
+            }
         });
 
         return () => {
             socket.off('chat message');
-            socket.off('update users');
             socket.off('typing');
-            socket.off('notification');
         };
     }, []);
 
-    // load conversation history when receiver changes
+    // load conversation list once we have the userId
     useEffect(() => {
-        if (!receiverId || !userId) return;
-        const fetchMessages = async () => {
+        if (!userId) return;
+        const fetchConversations = async () => {
             try {
-                const response = await api.get(`/Message/messages/${userId}/${receiverId}`);
-                setMessages(response.data);
-            } catch (error) {
-                console.error('failed to fetch messages:', error);
+                const res = await api.get('/Message/conversations');
+                setConversations(res.data);
+                // seed unread map from the list
+                const counts = {};
+                res.data.forEach((c) => { if (c.unread > 0) counts[c.contactId] = c.unread; });
+                setUnreadCounts(counts);
+            } catch (err) {
+                console.error('failed to load conversations:', err);
             }
         };
-        fetchMessages();
+        fetchConversations();
+    }, [userId]);
+
+    // fetch history and mark as read whenever the selected contact changes
+    useEffect(() => {
+        if (!receiverId || !userId) return;
+
+        const fetchAndMark = async () => {
+            try {
+                const res = await api.get(`/Message/messages/${userId}/${receiverId}`);
+                setMessages(res.data);
+                setIsTyping(false);
+
+                // mark incoming messages from this contact as read
+                await api.patch(`/Message/mark-read/${receiverId}`);
+
+                // clear badge
+                setUnreadCounts((prev) => {
+                    const updated = { ...prev };
+                    delete updated[receiverId];
+                    return updated;
+                });
+                setConversations((prev) =>
+                    prev.map((c) => (c.contactId === receiverId ? { ...c, unread: 0 } : c))
+                );
+            } catch (err) {
+                console.error('failed to fetch messages:', err);
+            }
+        };
+
+        fetchAndMark();
     }, [receiverId, userId]);
 
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // close emoji picker on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+                setShowEmojiPicker(false);
+            }
+            // close new-chat results if clicking outside the search box
+            if (newChatRef.current && !newChatRef.current.contains(e.target)) {
+                setShowUserResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const handleSelectContact = (contactId, contactName) => {
+        setReceiverId(contactId);
+        setReceiverName(contactName);
+        setSearchQuery('');
+    };
+
+    // start a fresh conversation with someone not yet in the list
+    const handleStartNewChat = (user) => {
+        setNewChatQuery('');
+        setShowUserResults(false);
+        setReceiverId(user._id);
+        setReceiverName(`${user.firstname} ${user.lastname}`);
+        // add them to the conversation list if they're not already there
+        setConversations((prev) => {
+            if (prev.find((c) => c.contactId === user._id)) return prev;
+            return [
+                {
+                    contactId:      user._id,
+                    contactName:    `${user.firstname} ${user.lastname}`,
+                    profilePicture: user.profilePicture || '',
+                    lastMessage:    '',
+                    lastTimestamp:  new Date().toISOString(),
+                    unread:         0,
+                },
+                ...prev,
+            ];
+        });
+    };
+
+    // filter allUsers by the typed query, excluding yourself
+    const userSearchResults = newChatQuery.trim().length > 0
+        ? allUsers.filter((u) =>
+            u._id !== userId &&
+            `${u.firstname} ${u.lastname}`.toLowerCase().includes(newChatQuery.toLowerCase())
+          )
+        : [];
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!message.trim() || !userId || !receiverId) return;
+        if (!message.trim() || !userId || !receiverId || isSending) return;
 
+        const clientId   = crypto.randomUUID();
         const messageData = {
             sender:    userId,
             receiver:  receiverId,
             content:   message,
             timestamp: new Date().toISOString(),
+            clientId,
         };
 
+        setIsSending(true);
         try {
-            await api.post('/Message/saveMessage', messageData);
-            socket.emit('chat message', messageData);
+            const res = await api.post('/Message/saveMessage', messageData);
+            // emit with the DB-assigned _id so receivers can dedup by it
+            socket.emit('chat message', { ...messageData, _id: res.data._id });
+            socket.emit('typing', { isTyping: false, nick: username, recipientId: receiverId });
             setMessage('');
-        } catch (error) {
-            console.error('failed to send message:', error);
+            setShowEmojiPicker(false);
+
+            setConversations((prev) => {
+                const exists = prev.find((c) => c.contactId === receiverId);
+                if (exists) {
+                    return prev.map((c) =>
+                        c.contactId === receiverId
+                            ? { ...c, lastMessage: message, lastTimestamp: messageData.timestamp }
+                            : c
+                    );
+                }
+                return [
+                    { contactId: receiverId, contactName: receiverName, profilePicture: '', lastMessage: message, lastTimestamp: messageData.timestamp, unread: 0 },
+                    ...prev,
+                ];
+            });
+        } catch (err) {
+            console.error('failed to send message:', err);
+        } finally {
+            setIsSending(false);
         }
     };
 
     const handleInputChange = (e) => {
         setMessage(e.target.value);
-        socket.emit('typing', { isTyping: e.target.value.length > 0, nick: username });
+        socket.emit('typing', {
+            isTyping:    e.target.value.length > 0,
+            nick:        username,
+            recipientId: receiverId,
+        });
+    };
+
+    const handleEmojiClick = (emojiData) => {
+        setMessage((prev) => prev + emojiData.emoji);
+        inputRef.current?.focus();
     };
 
     const handleLogout = () => {
@@ -123,111 +275,227 @@ const UserChat = () => {
         history.push('/login');
     };
 
-    const handleReceiverSelection = async (selectedOption) => {
-        const name = selectedOption?.label;
-        if (!name) return;
-        try {
-            const response = await api.get('/Register/userIdByUsername', { params: { username: name } });
-            setReceiverId(response.data.userId);
-            setReceiverName(name);
-        } catch (error) {
-            console.error('failed to fetch receiver id:', error);
-        }
-    };
-
     const handleSearch = async () => {
         if (!searchQuery.trim() || !receiverId) return;
         try {
-            const response = await api.get(`/Message/search/${userId}/${receiverId}`, {
-                params: { query: searchQuery },
-            });
-            setMessages(response.data);
-        } catch (error) {
-            console.error('message search failed:', error);
+            const res = await api.get(`/Message/search/${userId}/${receiverId}`, { params: { query: searchQuery } });
+            setMessages(res.data);
+        } catch (err) {
+            console.error('message search failed:', err);
         }
     };
 
-    const userOptions = users.map((user) => ({
-        value: user._id,
-        label: user.firstname,
-    }));
-
-    if (!profileData) return <div>Loading...</div>;
+    if (!profileData) return <div className="chat-loading">Loading...</div>;
 
     return (
-        <div className="chat-container">
-            <div className="user-profile-section">
-                {profileData.profilePicture ? (
-                    <img src={profileData.profilePicture} alt="Profile" className="profile-image-large" />
-                ) : (
-                    <p>No profile picture available</p>
+        <div className="chat-page">
+            {/* sidebar */}
+            <aside className="chat-sidebar">
+                <div className="sidebar-profile">
+                    {profileData.profilePicture ? (
+                        <img src={profileData.profilePicture} alt="Profile" className="profile-image-large" />
+                    ) : (
+                        <div className="profile-avatar-placeholder">
+                            {profileData.firstname?.[0]}{profileData.lastname?.[0]}
+                        </div>
+                    )}
+                    <h3 className="sidebar-username">{profileData.firstname} {profileData.lastname}</h3>
+                </div>
+
+                <nav className="sidebar-nav">
+                    <button onClick={() => history.push('/dashboard')} className="sidebar-nav-btn">Home</button>
+                    <button onClick={() => history.push('/groups')}    className="sidebar-nav-btn">Groups</button>
+                    <button onClick={() => history.push('/profile')}   className="sidebar-nav-btn">Profile</button>
+                    <button onClick={handleLogout}                     className="sidebar-nav-btn danger">Logout</button>
+                </nav>
+
+                {receiverId && (
+                    <div className="search-section">
+                        <label className="select-label">Search messages</label>
+                        <div className="search-bar">
+                            <input
+                                type="text"
+                                placeholder="Keyword..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                            <button onClick={handleSearch}>Go</button>
+                        </div>
+                    </div>
                 )}
-                <h3>{profileData.firstname} {profileData.lastname}</h3>
-            </div>
 
-            <div className="chat-actions">
-                <button onClick={() => history.push('/dashboard')} className="btn btn-outline-secondary profile-btn">Home</button>
-                <button onClick={() => history.push('/profile')} className="btn btn-info profile-btn">Profile</button>
-                <button onClick={() => history.push('/groups')} className="btn btn-secondary group-btn">Groups</button>
-                <button onClick={handleLogout} className="btn btn-danger logout-btn">Logout</button>
-            </div>
+                {/* new conversation — search input + browse dropdown */}
+                <div className="new-chat-section" ref={newChatRef}>
+                    <label className="select-label">New Conversation</label>
+                    <div className="new-chat-input-row">
+                        <input
+                            type="text"
+                            className="new-chat-input"
+                            placeholder="Search people..."
+                            value={newChatQuery}
+                            onChange={(e) => {
+                                setNewChatQuery(e.target.value);
+                                setShowUserResults(true);
+                            }}
+                            onFocus={() => setShowUserResults(true)}
+                        />
+                        {/* toggle button — shows everyone when no query is typed */}
+                        <button
+                            type="button"
+                            className={`new-chat-toggle-btn ${showUserResults ? 'open' : ''}`}
+                            onClick={() => setShowUserResults((prev) => !prev)}
+                            title="Browse all users"
+                        >
+                            ▾
+                        </button>
+                    </div>
 
-            <div className="users-list">
-                <h5>Select a User to Chat:</h5>
-                <Select
-                    options={userOptions}
-                    onChange={handleReceiverSelection}
-                    placeholder="Search for users..."
-                    classNamePrefix="react-select"
-                />
-            </div>
+                    {showUserResults && (
+                        <div className="new-chat-results">
+                            {/* when nothing is typed, show everyone; when typed, show filtered */}
+                            {(newChatQuery.trim().length === 0
+                                ? allUsers.filter((u) => u._id !== userId)
+                                : userSearchResults
+                            ).length === 0 ? (
+                                <div className="new-chat-no-results">No users found</div>
+                            ) : (
+                                (newChatQuery.trim().length === 0
+                                    ? allUsers.filter((u) => u._id !== userId)
+                                    : userSearchResults
+                                ).map((user) => (
+                                    <button
+                                        key={user._id}
+                                        className="new-chat-result-item"
+                                        onClick={() => handleStartNewChat(user)}
+                                    >
+                                        <div className="conversation-avatar">
+                                            {user.profilePicture ? (
+                                                <img src={user.profilePicture} alt={user.firstname} />
+                                            ) : (
+                                                <span>{user.firstname?.[0]?.toUpperCase()}</span>
+                                            )}
+                                        </div>
+                                        <span className="new-chat-result-name">
+                                            {user.firstname} {user.lastname}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
 
-            <div className="search-bar">
-                <input
-                    type="text"
-                    placeholder="Search messages..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button onClick={handleSearch}>Search</button>
-            </div>
+                {/* conversation list with unread badges */}
+                <div className="conversation-list-header">
+                    <span className="select-label">Messages</span>
+                </div>
+                <div className="conversation-list">
+                    {conversations.length === 0 && (
+                        <p className="no-conversations-text">No conversations yet.</p>
+                    )}
+                    {conversations.map((conv) => {
+                        const totalUnread = unreadCounts[conv.contactId] ?? conv.unread;
+                        const isActive    = conv.contactId === receiverId;
+                        return (
+                            <button
+                                key={conv.contactId}
+                                className={`conversation-item ${isActive ? 'active' : ''}`}
+                                onClick={() => handleSelectContact(conv.contactId, conv.contactName)}
+                            >
+                                <div className="conversation-avatar">
+                                    {conv.profilePicture ? (
+                                        <img src={conv.profilePicture} alt={conv.contactName} />
+                                    ) : (
+                                        <span>{conv.contactName?.[0]?.toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="conversation-info">
+                                    <div className="conversation-name">{conv.contactName}</div>
+                                    <div className="conversation-preview">{conv.lastMessage}</div>
+                                </div>
+                                {totalUnread > 0 && (
+                                    <span className="unread-badge">{totalUnread > 99 ? '99+' : totalUnread}</span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </aside>
 
-            <div className="message-list">
-                {messages.map((msg, index) => {
-                    const { date, time } = formatMessageTime(msg.timestamp);
-                    return (
-                        <div key={index} className={`message-item ${msg.sender === userId ? 'sent' : 'received'}`}>
-                            <div className="message-content">
-                                <strong>{msg.sender === userId ? 'You' : receiverName}:</strong> {msg.content}
-                                <div className="message-info">
-                                    <span className="date">{date}</span>
-                                    <span className="time">{time}</span>
+            {/* main chat panel */}
+            <main className="chat-main">
+                <div className="chat-main-header">
+                    <span className="chat-with-label">
+                        {receiverName ? `Chatting with ${receiverName}` : 'Select a conversation to start chatting'}
+                    </span>
+                </div>
+
+                <div className="message-list">
+                    {messages.map((msg, index) => {
+                        const { date, time } = formatMessageTime(msg.timestamp);
+                        return (
+                            <div key={index} className={`message-item ${msg.sender === userId ? 'sent' : 'received'}`}>
+                                <div className="message-content">
+                                    <span className="message-text">{msg.content}</span>
+                                    <div className="message-info">
+                                        <span>{date}</span>
+                                        <span>{time}</span>
+                                    </div>
                                 </div>
                             </div>
+                        );
+                    })}
+                    <div ref={messageEndRef} />
+                </div>
+
+                {isTyping && receiverName && (
+                    <div className="typing-indicator">
+                        <span className="typing-dot" />
+                        <span className="typing-dot" />
+                        <span className="typing-dot" />
+                        <span className="typing-text">{typingName} is typing...</span>
+                    </div>
+                )}
+
+                <div className="message-input-area">
+                    {showEmojiPicker && (
+                        <div className="emoji-picker-wrapper" ref={emojiPickerRef}>
+                            <EmojiPicker
+                                onEmojiClick={handleEmojiClick}
+                                width="100%"
+                                height={320}
+                                searchDisabled={false}
+                                skinTonesDisabled
+                                previewConfig={{ showPreview: false }}
+                            />
                         </div>
-                    );
-                })}
-                <div ref={messageEndRef} />
-            </div>
+                    )}
 
-            <div className="notifications">
-                {notifications.map((notification, index) => (
-                    <div key={index} className="notification">{notification.content}</div>
-                ))}
-            </div>
-
-            <form onSubmit={handleSubmit} className="message-form mt-3">
-                <input
-                    type="text"
-                    value={message}
-                    onChange={handleInputChange}
-                    placeholder="Type a message..."
-                    className="form-control"
-                />
-                <button type="submit" className="btn btn-primary ml-2">Send</button>
-            </form>
-
-            {isTyping && <div className="fallback"><p>Someone is typing...</p></div>}
+                    <form onSubmit={handleSubmit} className="message-form">
+                        <button
+                            type="button"
+                            className="emoji-toggle-btn"
+                            onClick={() => setShowEmojiPicker((prev) => !prev)}
+                            title="Emoji"
+                        >
+                            😊
+                        </button>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={message}
+                            onChange={handleInputChange}
+                            placeholder={receiverId ? 'Type a message...' : 'Select a conversation first'}
+                            className="message-input"
+                            disabled={!receiverId}
+                        />
+                        <button type="submit" className="send-btn" disabled={!receiverId || isSending}>
+                            {isSending ? 'Sending...' : 'Send'}
+                        </button>
+                    </form>
+                </div>
+            </main>
         </div>
     );
 };

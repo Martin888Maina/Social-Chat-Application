@@ -69,3 +69,28 @@
     border-radius: 6px;
     font-size: 0.9rem;
 }
+
+@media (max-width: 600px) {
+    .dashboard-container {
+        margin: 20px 16px;
+        padding: 0;
+    }
+
+    .dashboard-welcome h2 {
+        font-size: 1.3rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

@@ -6,9 +6,12 @@ const createError = require('http-errors');
 module.exports = {
     CreateGroup: async (req, res, next) => {
         const { name, members } = req.body;
+        const creatorId = req.payload.aud;
 
         try {
-            const newGroup = new Group({ name, members });
+            // make sure the creator is always in the members list
+            const allMembers = members ? [...new Set([creatorId, ...members])] : [creatorId];
+            const newGroup = new Group({ name, creator: creatorId, members: allMembers });
             const result = await newGroup.save();
             res.status(201).json(result);
         } catch (error) {
@@ -51,16 +54,24 @@ module.exports = {
     },
 
     SendMessageToGroup: async (req, res, next) => {
-        const { groupId, sender, content } = req.body;
+        const { groupId, sender, content, clientId } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(sender)) {
             return next(createError(400, 'Invalid group ID or sender ID'));
         }
 
         try {
-            const newMessage = new Conversation({ groupId, sender, content });
-            const result = await newMessage.save();
-            req.io.to(groupId).emit('group message', result);
+            let result;
+            // upsert on clientId so retries return the same saved record
+            if (clientId) {
+                result = await Conversation.findOneAndUpdate(
+                    { clientId },
+                    { $setOnInsert: { groupId, sender, content, clientId } },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+            } else {
+                result = await new Conversation({ groupId, sender, content }).save();
+            }
             res.status(201).json(result);
         } catch (error) {
             next(createError(500, 'Failed to send message'));

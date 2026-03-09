@@ -36,19 +36,19 @@ app.use(cors({
 
 app.use(express.json());
 
-// rate limiter for auth endpoints — keep brute force attempts low
+// rate limiter for auth endpoints — relaxed for development/testing
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    max: 200,
     message: { error: { status: 429, message: 'Too many requests, please try again later.' } },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// tighter limiter for message sending
+// limiter for message sending — relaxed for development/testing
 const messageLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 60,
+    max: 300,
     message: { error: { status: 429, message: 'Sending too fast, slow down.' } },
     standardHeaders: true,
     legacyHeaders: false,
@@ -146,6 +146,11 @@ io.on('connection', (socket) => {
         if (recipient) {
             io.to(recipient.socketId).emit('typing', data);
         }
+    });
+
+    // broadcast typing status to everyone else in the group room
+    socket.on('group typing', (data) => {
+        socket.to(data.groupId).emit('group typing', data);
     });
 
     socket.on('logout', (username) => {

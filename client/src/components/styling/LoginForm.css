@@ -77,3 +77,11 @@
 .show-password-label:hover {
     color: #1a73e8;
 }
+
+@media (max-width: 600px) {
+    .login-container {
+        margin: 20px 16px;
+        padding: 28px 20px;
+        border-radius: 8px;
+    }
+}

@@ -7,29 +7,37 @@ A full-stack real-time messaging platform built with React, Node.js, Express, So
 ## Features
 
 - User registration and login with JWT-based authentication
-- Real-time private messaging with typing indicators
-- Group chat creation and management
+- Real-time private messaging with typing indicators and unread message badges
+- Real-time group messaging with typing indicators and unread message badges
+- Conversation sidebar showing last message preview and unread counts per contact
+- Group sidebar showing last message preview and unread counts per group
+- Start new conversations by searching or browsing all registered users
+- Idempotent message sending — retries never create duplicate messages in private or group chat
 - Online/offline user status tracking
 - User profile with profile picture upload (file or URL)
 - Password reset via email link
-- Dashboard with summary statistics
+- Dashboard with summary statistics (total users, messages, groups)
 - Group settings: view members, remove members, delete group
+- Group creator is automatically added as a member on group creation
+- Responsive layout with hamburger navigation menu on mobile
 - Protected routes — unauthenticated users are redirected to login
-- Responsive layout using Bootstrap 5
+- Centralized error handling and security headers via helmet
+- Rate limiting on authentication and message endpoints
 
 ---
 
 ## Tech Stack
 
 **Frontend**
-- React 18 (Create React App)
+- React 18 (Vite + @vitejs/plugin-react)
 - React Router DOM v5
-- Axios (centralized API service)
+- Axios (centralized API service with token interceptor)
 - Socket.io Client
 - Bootstrap 5 and react-bootstrap
 - react-select (dropdowns)
 - react-toastify (notifications)
 - sweetalert2 (confirmation modals)
+- emoji-picker-react (emoji picker in chat)
 
 **Backend**
 - Node.js with Express 4
@@ -109,13 +117,13 @@ npm install
 Create a `.env` file in the `client/` directory based on `.env.example`:
 
 ```env
-REACT_APP_API_URL=http://localhost:4000
+VITE_API_URL=http://localhost:4000
 ```
 
 Start the frontend:
 
 ```bash
-npm start
+npm run dev
 ```
 
 The app opens at `http://localhost:3000`.
@@ -144,7 +152,7 @@ Both the server and client must be running at the same time.
 
 | Variable | Description |
 |---|---|
-| `REACT_APP_API_URL` | Base URL of the backend API (e.g. http://localhost:4000) |
+| `VITE_API_URL` | Base URL of the backend API (e.g. http://localhost:4000) |
 
 ---
 
@@ -152,10 +160,12 @@ Both the server and client must be running at the same time.
 
 ```
 Social-Chat-Application/
-├── client/                        # React frontend
+├── client/                        # React frontend (Vite)
 │   ├── public/
+│   ├── index.html
+│   ├── vite.config.js
 │   └── src/
-│       ├── App.js                 # Route definitions
+│       ├── App.jsx                # Route definitions
 │       ├── context/
 │       │   └── AuthContext.js     # Authentication state management
 │       ├── services/
@@ -205,17 +215,20 @@ All routes are prefixed and mounted in `server/index.js`.
 - `GET /Register/stats` — summary statistics (auth required)
 
 **Private Messaging** (`/Message`)
-- `POST /Message/saveMessage` — save a message to the database
+- `POST /Message/saveMessage` — save a message (idempotent via clientId)
 - `GET /Message/messages/:senderId/:receiverId` — fetch message history
+- `GET /Message/conversations` — fetch conversation list with unread counts (auth required)
+- `GET /Message/unread-counts` — get unread message counts per sender (auth required)
+- `PATCH /Message/mark-read/:senderId` — mark all messages from a sender as read (auth required)
 - `GET /Message/search/:userId/:receiverId` — search messages by query
 - `PATCH /Message/updateMessage/:_id` — update a message
 - `DELETE /Message/deleteMessage/:_id` — delete a message
 
 **Group Chat** (`/Group`)
-- `POST /Group/groups` — create a group
+- `POST /Group/groups` — create a group (creator auto-added as member)
 - `POST /Group/groups/:groupId/members` — add a member
 - `GET /Group/users/:userId/groups` — get groups for a user
-- `POST /Group/groups/:groupId/messages` — send a message to a group
+- `POST /Group/groups/:groupId/messages` — send a message to a group (idempotent via clientId)
 - `GET /Group/groups/:groupId/messages` — fetch group messages
 - `GET /Group/groups/:groupId/members` — list group members
 - `DELETE /Group/groups/:groupId/members/:userId` — remove a member (creator only)
@@ -243,11 +256,24 @@ Socket.io is used for all real-time communication. The connection is managed by 
 
 Key socket events:
 - `new user` — register presence when a user connects
-- `chat message` — private message routing
-- `group message` — broadcast to a group room
-- `typing` — typing indicator
+- `chat message` — private message routing between two users
+- `group message` — broadcast to all members in a group room
+- `typing` — private chat typing indicator sent to the recipient
+- `group typing` — group chat typing indicator broadcast to the group room
 - `logout` — remove user from the online list
 - `update users` — broadcast the updated online user list to all clients
+- `notification` — push notification for incoming private or group messages
+
+---
+
+## Idempotency and Deduplication
+
+Both private and group message sending use a client-generated `clientId` (UUID) attached to each send request.
+
+- The backend uses `findOneAndUpdate` with `$setOnInsert` and `upsert: true` on the `clientId` field, so a retry with the same key returns the original saved record without inserting a duplicate.
+- The `clientId` field on both the `Message` and `Conversation` models has a sparse unique index, providing a database-level safety net.
+- On the frontend, incoming socket messages are deduplicated by both `_id` and `clientId` before being appended to the message list.
+- The send button is disabled while a request is in-flight to prevent double-submission from rapid clicks.
 
 ---
 

@@ -18,6 +18,15 @@ routes.get('/messages/:senderId/:receiverId', verifyAccessToken, messageControll
 // Route to search messages between two users
 routes.get('/search/:userId/:receiverId', verifyAccessToken, messageController.SearchMessages);
 
+// conversation list for sidebar — one entry per contact with unread count
+routes.get('/conversations', verifyAccessToken, messageController.GetConversations);
+
+// unread counts per sender (used on initial load)
+routes.get('/unread-counts', verifyAccessToken, messageController.GetUnreadCounts);
+
+// mark all messages from a sender as read
+routes.patch('/mark-read/:senderId', verifyAccessToken, messageController.MarkAsRead);
+
 //Add messages to the database
 routes.post('/message', verifyAccessToken,  messageController.AddMessage);
 

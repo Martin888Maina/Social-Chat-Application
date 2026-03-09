@@ -23,6 +23,12 @@ const conversationSchema = new Schema({
     timestamp: {
         type: Date,
         default: Date.now
+    },
+    // client-generated idempotency key — prevents duplicate saves on retry
+    clientId: {
+        type: String,
+        sparse: true,
+        unique: true,
     }
 }, {
     timestamps: true

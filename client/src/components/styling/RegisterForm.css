@@ -66,3 +66,11 @@
 .register-link:hover {
     text-decoration: underline;
 }
+
+@media (max-width: 600px) {
+    .register-container {
+        margin: 20px 16px;
+        padding: 24px 20px;
+        border-radius: 8px;
+    }
+}

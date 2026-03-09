@@ -20,6 +20,16 @@ const messageSchema = new Schema({
     timestamp: {
         type: Date,
         default: Date.now
+    },
+    isRead: {
+        type: Boolean,
+        default: false
+    },
+    // client-generated idempotency key — prevents duplicate saves on retry
+    clientId: {
+        type: String,
+        sparse: true,
+        unique: true,
     }
 }, {
     timestamps: true

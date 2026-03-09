@@ -212,13 +212,18 @@ module.exports = {
 
     getStats: async (req, res, next) => {
         try {
-            const [totalUsers, totalMessages, totalGroups] = await Promise.all([
+            const userId = req.payload.aud;
+
+            const [totalUsers, myMessages, myGroups] = await Promise.all([
+                // global — how many people are on the platform
                 Register.countDocuments(),
-                Message.countDocuments(),
-                Group.countDocuments(),
+                // scoped to this user — messages they sent
+                Message.countDocuments({ sender: userId }),
+                // scoped to this user — groups they are a member of
+                Group.countDocuments({ members: userId }),
             ]);
 
-            res.status(200).json({ totalUsers, totalMessages, totalGroups });
+            res.status(200).json({ totalUsers, totalMessages: myMessages, totalGroups: myGroups });
         } catch (error) {
             next(error);
         }
